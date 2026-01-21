@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="kg-card">
+  <div class="kg-card__header">
+    <h3 class="kg-card__title">Фильмы: {{ genre }}</h3>
+    <span class="kg-muted">Годы: {{ y_from }}—{{ y_to }} • найдено: {{ total }}</span>
+  </div>
+
+  {% if results %}
+    <div class="kg-grid">
+      {% for r in results %}
+        <article class="kg-movie">
+          <a class="kg-movie__poster" href="#" aria-label="{{ r.title }}" data-letter="{{ r.title[:1] | upper }}"></a>
+          <div class="kg-movie__meta">
+            <h4 class="kg-movie__title">{{ r.title }}</h4>
+            <div class="kg-movie__badges">
+              <span class="kg-badge">{{ r.release_year }}</span>
+              <span class="kg-badge kg-badge--rating">{{ r.rating }}</span>
+              <span class="kg-badge kg-badge--genre">{{ r.genre }}</span>
+            </div>
+            {% if r.description %}
+              <p class="kg-movie__desc">{{ r.description }}</p>
+            {% endif %}
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+
+    <div class="kg-pager">
+      {% if page > 1 %}
+        <a class="kg-btn" href="{{ url_for('search_genre', genre=genre, y_from=y_from, y_to=y_to, page=page-1) }}">&laquo; Предыдущие</a>
+      {% endif %}
+      <span class="kg-muted">Стр. {{ page }}</span>
+      {% if has_next %}
+        <a class="kg-btn kg-btn--accent" href="{{ url_for('search_genre', genre=genre, y_from=y_from, y_to=y_to, page=page+1) }}">Следующие &raquo;</a>
+      {% endif %}
+    </div>
+  {% else %}
+    <p class="kg-muted">Нет результатов.</p>
+  {% endif %}
+</section>
+{% endblock %}

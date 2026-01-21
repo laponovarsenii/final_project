@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="kg-hero">
+  <div class="kg-hero__text">
+    <h2 class="kg-hero__title">Добро пожаловать!</h2>
+    <p class="kg-hero__subtitle">Ищи��е фильмы по названию или фильтруйте по жанру и годовому диапазону. Результаты — как на кинго: карточки, постеры, пагинация.</p>
+    <form class="kg-hero__search" method="get" action="{{ url_for('search_keyword') }}">
+      <input class="kg-search__input" type="text" name="q" placeholder="Например: ace, zoo, matrix" required>
+      <button class="kg-btn kg-btn--primary" type="submit">Искать</button>
+    </form>
+  </div>
+</section>
+
+<section class="kg-card">
+  <h3 class="kg-card__title">Быстрый фильтр по жанрам</h3>
+  <div class="kg-tags">
+    {% for g in genres %}
+      <a class="kg-tag" href="{{ url_for('search_genre', genre=g, y_from=min_year, y_to=max_year) }}">{{ g }}</a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="kg-card">
+  <h3 class="kg-card__title">Популярные запросы (топ‑5)</h3>
+  {% if popular %}
+    <ol class="kg-stats">
+      {% for r in popular %}
+        <li class="kg-stats__item">
+          <code class="kg-code">{{ r.search_type }}</code>
+          <code class="kg-code">{{ r.params }}</code>
+          <span class="kg-badge kg-badge--accent">{{ r.count }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p class="kg-muted">Нет данных.</p>
+  {% endif %}
+</section>
+
+<section class="kg-card">
+  <h3 class="kg-card__title">Последние уникальные (5)</h3>
+  {% if latest %}
+    <ol class="kg-stats">
+      {% for r in latest %}
+        <li class="kg-stats__item">
+          <code class="kg-code">{{ r.timestamp }}</code>
+          <code class="kg-code">{{ r.search_type }}</code>
+          <code class="kg-code">{{ r.params }}</code>
+          <span class="kg-badge">{{ r.results_count }}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p class="kg-muted">Нет данных.</p>
+  {% endif %}
+</section>
+{% endblock %}
