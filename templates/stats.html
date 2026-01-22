@@ -1,37 +1,90 @@
 {% extends "base.html" %}
-{% block content %}
-<section class="kg-card">
-  <h3 class="kg-card__title">Популярные запросы (топ‑5)</h3>
-  {% if popular %}
-    <ol class="kg-stats">
-      {% for r in popular %}
-        <li class="kg-stats__item">
-          <code class="kg-code">{{ r.search_type }}</code>
-          <code class="kg-code">{{ r.params }}</code>
-          <span class="kg-badge kg-badge--accent">{{ r.count }}</span>
-        </li>
-      {% endfor %}
-    </ol>
-  {% else %}
-    <p class="kg-muted">Нет данных.</p>
-  {% endif %}
-</section>
+{% block title %}Статистика — Film Search{% endblock %}
 
-<section class="kg-card">
-  <h3 class="kg-card__title">Последние уникальные (5)</h3>
-  {% if latest %}
-    <ol class="kg-stats">
-      {% for r in latest %}
-        <li class="kg-stats__item">
-          <code class="kg-code">{{ r.timestamp }}</code>
-          <code class="kg-code">{{ r.search_type }}</code>
-          <code class="kg-code">{{ r.params }}</code>
-          <span class="kg-badge">{{ r.results_count }}</span>
-        </li>
-      {% endfor %}
-    </ol>
-  {% else %}
-    <p class="kg-muted">Нет данных.</p>
-  {% endif %}
+{% block content %}
+<section class="panel stats-panel">
+  <div class="stats-columns">
+
+    <div class="stat-card">
+      <h4 class="stat-title">Популярные</h4>
+
+      <!-- Таблица: "Запрос" | "Кол-во" -->
+      <div class="stat-table-wrap">
+        <table class="stat-table" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:8px 10px; color:var(--muted); font-weight:600;">Запрос</th>
+              <th style="width:120px; text-align:right; padding:8px 10px; color:var(--muted); font-weight:600;">Кол-во</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for row in popular %}
+            {% if row.search_type == 'keyword' %}
+              {% set label = row.params.keyword if row.params and row.params.keyword is defined else 'keyword' %}
+            {% elif row.search_type == 'genre_year' %}
+              {% set yfrom = row.params.year_from if row.params and row.params.year_from is defined else '' %}
+              {% set yto = row.params.year_to if row.params and row.params.year_to is defined else '' %}
+              {% set label = (row.params.genre if row.params and row.params.genre is defined else 'genre') ~ ((' ' ~ yfrom ~ '-' ~ yto) if yfrom or yto else '') %}
+            {% else %}
+              {% set label = row.params | tojson %}
+            {% endif %}
+            <tr class="stat-row">
+              <td style="padding:10px; border-top:1px solid rgba(255,255,255,0.02);">
+                <span class="stat-key">{{ label }}</span>
+                <div class="muted" style="font-size:12px;">{{ row.search_type }}</div>
+              </td>
+              <td style="padding:10px; border-top:1px solid rgba(255,255,255,0.02); text-align:right;">
+                <span class="stat-value">{{ row.count }}</span>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="2" class="muted" style="padding:10px">Нет данных.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <h4 class="stat-title">Последние</h4>
+
+      <!-- Таблица: "Запрос" | "К��л-во (results_count)" -->
+      <div class="stat-table-wrap">
+        <table class="stat-table" style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left; padding:8px 10px; color:var(--muted); font-weight:600;">Запрос</th>
+              <th style="width:120px; text-align:right; padding:8px 10px; color:var(--muted); font-weight:600;">Кол-во</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for row in latest %}
+            {% if row.search_type == 'keyword' %}
+              {% set label = row.params.keyword if row.params and row.params.keyword is defined else 'keyword' %}
+            {% elif row.search_type == 'genre_year' %}
+              {% set yfrom = row.params.year_from if row.params and row.params.year_from is defined else '' %}
+              {% set yto = row.params.year_to if row.params and row.params.year_to is defined else '' %}
+              {% set label = (row.params.genre if row.params and row.params.genre is defined else 'genre') ~ ((' ' ~ yfrom ~ '-' ~ yto) if yfrom or yto else '') %}
+            {% else %}
+              {% set label = row.params | tojson %}
+            {% endif %}
+            <tr class="stat-row">
+              <td style="padding:10px; border-top:1px solid rgba(255,255,255,0.02);">
+                <span class="stat-key">{{ label }}</span>
+                <div class="muted" style="font-size:12px;">{{ row.search_type }}{% if row.timestamp is defined %} • {{ row.timestamp }}{% endif %}</div>
+              </td>
+              <td style="padding:10px; border-top:1px solid rgba(255,255,255,0.02); text-align:right;">
+                <span class="stat-value">{{ row.results_count }}</span>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="2" class="muted" style="padding:10px">Нет данных.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
 </section>
 {% endblock %}

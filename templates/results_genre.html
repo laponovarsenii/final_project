@@ -1,42 +1,84 @@
 {% extends "base.html" %}
+{% block title %}Фильмы — {{ genre }}{% endblock %}
+
 {% block content %}
-<section class="kg-card">
-  <div class="kg-card__header">
-    <h3 class="kg-card__title">Фильмы: {{ genre }}</h3>
-    <span class="kg-muted">Годы: {{ y_from }}—{{ y_to }} • найдено: {{ total }}</span>
+{# Макро для форматирования продолжительности (мин -> "Hh Mm") #}
+{% macro fmt_duration(mins) -%}
+  {%- if mins is not none and mins|int > 0 -%}
+    {%- set h = (mins|int) // 60 -%}
+    {%- set m = (mins|int) % 60 -%}
+    {{- (h > 0) and (h ~ 'h' ~ (m > 0 and ' ' or '')) or '' -}}
+    {{- (m > 0) and (m ~ 'm') or '' -}}
+  {%- endif -%}
+{%- endmacro %}
+
+<section class="panel">
+  <div class="panel-head">
+    <div>
+      <h3 class="panel-title">Фильмы: {{ genre }}</h3>
+      <div class="muted">Годы: {{ y_from }}—{{ y_to }} • найдено: {{ total }}</div>
+    </div>
   </div>
 
   {% if results %}
-    <div class="kg-grid">
+    <div class="movies-grid">
       {% for r in results %}
-        <article class="kg-movie">
-          <a class="kg-movie__poster" href="#" aria-label="{{ r.title }}" data-letter="{{ r.title[:1] | upper }}"></a>
-          <div class="kg-movie__meta">
-            <h4 class="kg-movie__title">{{ r.title }}</h4>
-            <div class="kg-movie__badges">
-              <span class="kg-badge">{{ r.release_year }}</span>
-              <span class="kg-badge kg-badge--rating">{{ r.rating }}</span>
-              <span class="kg-badge kg-badge--genre">{{ r.genre }}</span>
+        <article class="movie-card">
+          <a class="poster" href="#" aria-label="{{ r.title }}" data-letter="{{ r.title.strip()[:1] | upper }}">
+            {% if r.poster_url %}
+              <img class="poster-img" src="{{ r.poster_url }}" alt="{{ r.title }}">
+            {% else %}
+              <div class="poster-fallback" aria-hidden="true"></div>
+            {% endif %}
+
+            <div class="poster-overlay">
+              <div class="poster-title">{{ r.title }}</div>
             </div>
+          </a>
+
+          <div class="movie-info">
+            <div class="movie-top">
+              <div class="movie-meta-left">
+                {% if r.release_year %}
+                  <span class="movie-badge">{{ r.release_year }}</span>
+                {% endif %}
+                {% if r.duration %}
+                  <span class="movie-badge movie-duration">{{ fmt_duration(r.duration) }}</span>
+                {% endif %}
+              </div>
+
+              <div class="movie-meta-right">
+                {% if r.imdb_rating %}
+                  <a class="movie-imdb" href="{{ (r.imdb_url if r.imdb_url is defined else ('https://www.imdb.com/find?q=' ~ (r.title | urlencode))) }}" target="_blank" rel="noopener">
+                    ★ {{ '%.1f'|format(r.imdb_rating|float) }}
+                  </a>
+                {% endif %}
+                {% if r.rating %}
+                  <span class="movie-rating">{{ r.rating }}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="movie-genre">{{ r.genre if r.genre is defined else '' }}</div>
             {% if r.description %}
-              <p class="kg-movie__desc">{{ r.description }}</p>
+              <p class="movie-desc">{{ r.description }}</p>
             {% endif %}
           </div>
         </article>
       {% endfor %}
     </div>
 
-    <div class="kg-pager">
+    <div class="pager">
       {% if page > 1 %}
-        <a class="kg-btn" href="{{ url_for('search_genre', genre=genre, y_from=y_from, y_to=y_to, page=page-1) }}">&laquo; Предыдущие</a>
+        <a class="btn" href="{{ url_for('search_genre', genre=genre, y_from=y_from, y_to=y_to, page=page-1) }}">&laquo; Предыдущие</a>
       {% endif %}
-      <span class="kg-muted">Стр. {{ page }}</span>
+      <span class="muted">Стр. {{ page }}</span>
       {% if has_next %}
-        <a class="kg-btn kg-btn--accent" href="{{ url_for('search_genre', genre=genre, y_from=y_from, y_to=y_to, page=page+1) }}">Следующие &raquo;</a>
+        <a class="btn btn-accent" href="{{ url_for('search_genre', genre=genre, y_from=y_from, y_to=y_to, page=page+1) }}">Следующие &raquo;</a>
       {% endif %}
     </div>
   {% else %}
-    <p class="kg-muted">Нет результатов.</p>
+    <p class="muted">Нет результатов.</p>
   {% endif %}
 </section>
 {% endblock %}

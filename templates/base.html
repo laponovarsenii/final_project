@@ -1,96 +1,62 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <title>{{ title or 'КиноПоиск Sakila' }}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Шрифт для кинго‑стиля -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{% block title %}Film Search{% endblock %}</title>
+  <!-- Путь к CSS исправлен: файл лежит в static/style.css -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body class="kg-body">
-  <header class="kg-header">
-    <div class="kg-container kg-header__inner">
-      <a href="{{ url_for('index') }}" class="kg-logo">
-        <img src="{{ url_for('static', filename='logo.svg') }}" alt="Kinogo" height="28">
-      </a>
-      <nav class="kg-nav">
-        <a href="{{ url_for('index') }}" class="kg-nav__link">Главная</a>
-        <a href="{{ url_for('stats') }}" class="kg-nav__link">Статистика</a>
-        <a href="https://dev.mysql.com/doc/sakila/en/" target="_blank" rel="noopener" class="kg-nav__link">Документация Sakila</a>
-      </nav>
-      <form class="kg-search" method="get" action="{{ url_for('search_keyword') }}">
-        <input class="kg-search__input" type="text" name="q" placeholder="Поиск по названию..." value="{{ request.args.get('q','') }}">
-        <button class="kg-btn kg-btn--primary" type="submit">Искать</button>
+<body class="app-body">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand-row">
+        <a class="brand" href="{{ url_for('index') }}">
+          <span class="brand-logo">🎬</span>
+          <span class="brand-title">Film Search</span>
+        </a>
+        <nav class="nav">
+          <a class="nav-link" href="{{ url_for('index') }}">Главная</a>
+          <a class="nav-link" href="{{ url_for('stats') }}">Статистика</a>
+        </nav>
+      </div>
+
+      <form action="{{ url_for('search_keyword') }}" method="get" class="top-search" role="search">
+        <input name="q" class="top-search__input" placeholder="Поиск по названию, актеру или режиссёру..." value="{{ request.args.get('q','') }}">
+        <button type="submit" class="top-search__btn">Искать</button>
       </form>
     </div>
   </header>
 
-  <main class="kg-container kg-layout">
-    <aside class="kg-sidebar">
-      <section class="kg-card">
-        <h3 class="kg-card__title">Жанры</h3>
-        {% if genres %}
-          <ul class="kg-list">
-            {% for g in genres %}
-              <li><a class="kg-list__link" href="{{ url_for('search_genre', genre=g, y_from=min_year, y_to=max_year) }}">{{ g }}</a></li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="kg-muted">Нет данных по жанрам.</p>
-        {% endif %}
-      </section>
-      <section class="kg-card">
-        <h3 class="kg-card__title">Годы</h3>
-        {% if min_year and max_year and min_year <= max_year %}
-          <p class="kg-muted">Диапазон: {{ min_year }} — {{ max_year }}</p>
-          <form class="kg-form" method="get" action="{{ url_for('search_genre') }}">
-            <label class="kg-form__row">
-              <span>Жанр</span>
-              <select name="genre" required>
-                {% for g in genres %}
-                  <option value="{{ g }}">{{ g }}</option>
-                {% endfor %}
-              </select>
-            </label>
-            <div class="kg-form__grid">
-              <label>
-                <span>От</span>
-                <input type="number" name="y_from" min="{{ min_year }}" max="{{ max_year }}" value="{{ min_year }}" required>
-              </label>
-              <label>
-                <span>До</span>
-                <input type="number" name="y_to" min="{{ min_year }}" max="{{ max_year }}" value="{{ max_year }}">
-              </label>
-            </div>
-            <button class="kg-btn kg-btn--accent" type="submit">Фильтровать</button>
-          </form>
-        {% else %}
-          <p class="kg-muted">Нет данных о годах.</p>
-        {% endif %}
-      </section>
+  <div class="layout kg-container">
+    <aside class="sidebar">
+      <div class="panel">
+        <h4 class="panel-title">Жанры</h4>
+        <ul class="genres-list">
+          {% for g in genres %}
+            <li><a class="genre-link" href="{{ url_for('search_genre', genre=g, y_from=min_year, y_to=max_year) }}">{{ g }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h4 class="panel-title">Годы</h4>
+        <p class="muted"> {{ min_year }} — {{ max_year }}</p>
+      </div>
     </aside>
 
-    <section class="kg-content">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <ul class="kg-flash">
-            {% for category, message in messages %}
-              <li class="kg-flash__item kg-flash__item--{{ category }}">{{ message }}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      {% endwith %}
+    <main class="main">
       {% block content %}{% endblock %}
-    </section>
-  </main>
+    </main>
+  </div>
 
-  <footer class="kg-footer">
-    <div class="kg-container kg-footer__inner">
-      <small class="kg-muted">MongoDB: {{ settings.MONGODB_DATABASE if settings else '?' }} / {{ settings.MONGODB_COLLECTION_NAME if settings else '?' }}</small>
-      <small class="kg-muted">MySQL: {{ settings.DATABASE if settings else '?' }}</small>
+  <footer class="footer">
+    <div class="kg-container">
+      <div class="footer-inner">
+        <div>© {{ (config.SITE_NAME if config is defined else 'Film Search') }}</div>
+        <div class="muted">Дизайн обновлён • Современный тёмный интерфейс</div>
+      </div>
     </div>
   </footer>
 </body>

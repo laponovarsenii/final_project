@@ -7,8 +7,23 @@ import mysql_connector as db
 import log_writer
 import log_stats
 
-# Абсолютные пути к корню проекта, templates и static
-BASE_DIR = Path(__file__).resolve().parent.parent  # .../final_project1
+
+"""
+web_app.py
+
+Flask-приложение для поиска фильмов и показа статистики по запросам.
+Содержит маршруты:
+- index() — главная стра��ица с формой поиска;
+- search_keyword() — поиск по ключевому слову (названию);
+- search_genre() — поиск по жанру и диапазону годов;
+- stats() — страница статистики запросов;
+- not_found() — обработчик 404.
+
+Контекст (жанры, min/max year и настройки) добавляется в шаблоны через inject_common().
+Переменные окружения и конфигурация подтягиваются из local_settings и mysql_connector.
+"""
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 
@@ -19,14 +34,35 @@ app = Flask(
 )
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev")
 
+# Отладочные строки — временно, чтобы убедиться, что пути правильные.
+print("DEBUG: web_app __file__ ->", Path(__file__).resolve())
+print("DEBUG: BASE_DIR ->", BASE_DIR)
+print("DEBUG: templates_dir ->", app.template_folder, "exists:", Path(app.template_folder).is_dir())
+print("DEBUG: static_dir    ->", app.static_folder, "exists:", Path(app.static_folder).is_dir())
+print("DEBUG: index.html exists?:", (Path(app.template_folder) / "index.html").is_file())
+print("DEBUG: css exists?:", (Path(app.static_folder) / "css/style.css").is_file())
+
 PAGE_SIZE = settings.PAGE_SIZE
+
 
 @app.context_processor
 def inject_common():
     """
-    Внедряет в шаблоны Flask общие переменные (жанры, мин. и макс. год, настройки).
-    Используется во всех рендерах шаблонов автоматически.
-    :return: dict с переменными для шаблонов.
+    Внедряет общие данные в контекст всех шаблонов.
+
+    Попытка получить:
+      - genres: список доступных жанров (db.get_all_genres)
+      - min_year, max_year: границы годов (db.get_year_range)
+      - settings: локальные настройки (import local_settings as settings)
+
+    Если при получении данных возникнет исключение, возвращаются безопасные значения:
+      - genres = []
+      - min_year = 0
+      - max_year = 0
+
+    Возвращаемое значение:
+      dict с ключами 'settings', 'genres', 'min_year', 'max_year' — эти переменные будут
+      доступны во всех Jinja-шаблонах.
     """
     try:
         genres = db.get_all_genres()
@@ -35,21 +71,44 @@ def inject_common():
         genres, min_year, max_year = [], 0, 0
     return dict(settings=settings, genres=genres, min_year=min_year, max_year=max_year)
 
+
 @app.route("/")
 def index():
     """
-    Домашняя страница сайта (форма поиска по базе фильмов).
-    :return: HTML-шаблон index.html
+    Отображает главную страницу приложения.
+
+    Функция:
+      - Отдаёт шаблон 'index.html', где содержится форма поиска и быстрые фильтры.
+      - Не принимает параметров.
+      - Использует контекст, добавленный inject_common() (жанры, годы и т.д.).
+
+    Возвращает:
+      Результат render_template("index.html") — HTML для главной страницы.
     """
     return render_template("index.html")
+
 
 @app.route("/search/keyword")
 def search_keyword():
     """
-    Страница поиска фильмов по ключевому слову (части названия).
-    Обрабатывает GET-параметры q (ключевое слово) и page (номер страницы).
-    Делает поиск, логирует запрос, выводит результаты с навигацией по страницам.
-    :return: HTML шаблон с результатами поиска или с сообщением об ошибке.
+    Обрабатывает поиск фильмов по ключевому слову (части названия).
+
+    Логика:
+      - Читает GET-параметр 'q' (строка запроса) и 'page' (номер страницы).
+      - Валидирует параметр 'page' (целое, >=1).
+      - Если параметр 'q' пустой — добавляет flash-сообщение и перенаправляет на главную.
+      - Вычисляет offset по PAGE_SIZE и вызывает db.search_by_keyword(q, limit, offset).
+      - При первой странице (page == 1) логирует запрос в log_writer.log_query с типом "keyword".
+      - При ошибке DB-запроса — показывает flash с ошибкой и перенаправляет на главную.
+
+    Ожидаемые данные от db.search_by_keyword:
+      dict с ключами:
+        - results: список записей фильмов для текущей страницы
+        - total_count: общее количество результатов (int)
+        - has_next: булево, есть ли следующая страница
+
+    Возвращает:
+      render_template("results_keyword.html", ...) — шаблон с результатами поиска.
     """
     q = (request.args.get("q") or "").strip()
     page = request.args.get("page", "1")
@@ -85,13 +144,29 @@ def search_keyword():
         page_size=PAGE_SIZE,
     )
 
+
 @app.route("/search/genre")
 def search_genre():
     """
-    Страница поиска фильмов по жанру и диапазону годов.
-    Обрабатывает GET-параметры genre, y_from, y_to, page.
-    Проверяет валидность входных данных, делает поиск, логирует запрос, выводит результаты с навигацией по страницам.
-    :return: HTML шаблон с результатами поиска или ошибкой.
+    Обрабатывает поиск фильмов по жанру и диапазону годов.
+
+    Логика:
+      - Читает GET-параметры: 'genre', 'y_from', 'y_to', 'page'.
+      - Проверяет, что указанный жанр присутствует в списке доступных жанров.
+      - Валидирует годы (преобразует в int, корректность диапазона).
+      - Валидирует page (целое >=1).
+      - Вычисляет offset и вызывает db.search_by_genre_year(genre, y_from, y_to, limit, offset).
+      - При первой странице логирует запрос через log_writer.log_query с типом "genre_year".
+      - При ошибках (некорректный жанр/годы/DB) добавляет flash и перенаправляет на главную.
+
+    Ожидаемые данные от db.search_by_genre_year:
+      dict с ключами:
+        - results: список записей фильмов для текущей страницы
+        - total_count: общее количество результатов (int)
+        - has_next: булево, есть ли следующая страница
+
+    Возвращает:
+      render_template("results_genre.html", ...) — шаблон с результатами поиска по жанру.
     """
     genre = (request.args.get("genre") or "").strip()
     y_from = request.args.get("y_from", "").strip()
@@ -150,12 +225,21 @@ def search_genre():
         page_size=PAGE_SIZE,
     )
 
+
 @app.route("/stats")
 def stats():
     """
-    Страница со статистикой: показывает топ-5 популярных и последние 5 уникальных запросов.
-    При ошибках получения данных выводит сообщение.
-    :return: HTML шаблон stats.html с таблицами статистики.
+    Отдаёт страницу статистики поисковых запросов.
+
+    Функция:
+      - Пытается получить top-популярные запросы (log_stats.get_top_popular(limit=5))
+        и последние уникальные запросы (log_stats.get_latest_unique(limit=5)).
+      - В случае ошибок при получении данных соответствующая переменная будет пустым списком,
+        а пользователю будет показано flash-сообщение с подробностями.
+      - Передаёт данные в шаблон 'stats.html' под именами 'popular' и 'latest'.
+
+    Возвращает:
+      render_template("stats.html", popular=popular, latest=latest)
     """
     try:
         popular = log_stats.get_top_popular(limit=5)
@@ -171,13 +255,24 @@ def stats():
 
     return render_template("stats.html", popular=popular, latest=latest)
 
+
 @app.errorhandler(404)
 def not_found(_e):
     """
-    Обработчик 404 для вывода html-страницы "не найдено".
-    :return: HTML-шаблон base.html с сообщением об ошибке.
+    Обработчик для ошибок 404 (страница не найдена).
+
+    Параметры:
+      - _e: объект исключения/ошибки (игнорируется в теле функции).
+
+    Поведение:
+      - Возвращает шаблон 'base.html' с простым сообщением об ошибке и кодом ответа 404.
+      - Можно расширить для показа к��стомной страницы 404.
+
+    Возвращает:
+      tuple (render_template(...), 404)
     """
     return render_template("base.html", title="Не найдено", content="Страница не найдена."), 404
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5050))
