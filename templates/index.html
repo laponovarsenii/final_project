@@ -8,7 +8,7 @@
     <p class="hero-sub">По названию, жанру или году — удобная галерея, постеры и точная фильтрация.</p>
 
     <form class="hero-search" method="get" action="{{ url_for('search_keyword') }}">
-      <input class="hero-search__input" type="text" name="q" placeholder="Например: matrix, Inception, Nolan" required>
+      <input class="hero-search__input" type="text" name="q" placeholder="Например: matrix, Inception" required value="{{ request.args.get('q','') }}">
       <button class="hero-search__btn" type="submit">Искать</button>
     </form>
   </div>
@@ -18,7 +18,11 @@
   <h3 class="panel-title">Быстрый фильтр по жанрам</h3>
   <div class="tags">
     {% for g in genres %}
-      <a class="tag" href="{{ url_for('search_genre', genre=g, y_from=min_year, y_to=max_year) }}">{{ g }}</a>
+      <a class="tag"
+         href="{{ url_for('search_genre',
+                          genre=g,
+                          y_from=request.args.get('y_from', min_year),
+                          y_to=request.args.get('y_to', max_year)) }}">{{ g }}</a>
     {% endfor %}
   </div>
 </section>

@@ -23,7 +23,7 @@
       </div>
 
       <form action="{{ url_for('search_keyword') }}" method="get" class="top-search" role="search">
-        <input name="q" class="top-search__input" placeholder="Поиск по названию, актеру или режиссёру..." value="{{ request.args.get('q','') }}">
+        <input name="q" class="top-search__input" placeholder="По названию..." value="{{ request.args.get('q','') }}">
         <button type="submit" class="top-search__btn">Искать</button>
       </form>
     </div>
@@ -35,14 +35,56 @@
         <h4 class="panel-title">Жанры</h4>
         <ul class="genres-list">
           {% for g in genres %}
-            <li><a class="genre-link" href="{{ url_for('search_genre', genre=g, y_from=min_year, y_to=max_year) }}">{{ g }}</a></li>
+            <li>
+              <a class="genre-link"
+                 href="{{ url_for('search_genre',
+                                  genre=g,
+                                  y_from=request.args.get('y_from', min_year),
+                                  y_to=request.args.get('y_to', max_year)) }}">{{ g }}</a>
+            </li>
           {% endfor %}
         </ul>
       </div>
 
       <div class="panel">
         <h4 class="panel-title">Годы</h4>
-        <p class="muted"> {{ min_year }} — {{ max_year }}</p>
+
+        <form action="{{ url_for('search_genre') }}" method="get" class="year-filter" style="display:flex;flex-direction:column;gap:.5rem;">
+          <div class="year-inputs" style="display:flex;gap:.5rem;align-items:center;">
+            <label style="font-size:.9rem;">
+              От
+              <input
+                type="number"
+                name="y_from"
+                min="{{ min_year }}"
+                max="{{ max_year }}"
+                value="{{ request.args.get('y_from', min_year) }}"
+                style="width:100px;"
+              >
+            </label>
+            <span>—</span>
+            <label style="font-size:.9rem;">
+              До
+              <input
+                type="number"
+                name="y_to"
+                min="{{ min_year }}"
+                max="{{ max_year }}"
+                value="{{ request.args.get('y_to', max_year) }}"
+                style="width:100px;"
+              >
+            </label>
+          </div>
+
+          <div class="year-actions" style="margin-top:.5rem; display:flex; gap:.5rem;">
+            <button type="submit" class="btn">Применить</button>
+            <a class="btn btn-ghost" href="{{ url_for('index') }}">Сброс</a>
+          </div>
+
+          <p class="muted" style="margin-top:.5rem; font-size:.85rem;">
+            Допустимый диапазон: {{ min_year }} — {{ max_year }}
+          </p>
+        </form>
       </div>
     </aside>
 

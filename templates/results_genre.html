@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Фильмы — {{ genre }}{% endblock %}
+{% block title %}Фильмы — {{ genre if genre else 'Все' }}{% endblock %}
 
 {% block content %}
 {# Макро для форматирования продолжительности (мин -> "Hh Mm") #}
@@ -14,15 +14,29 @@
 
 <section class="panel">
   <div class="panel-head">
-    <div>
-      <h3 class="panel-title">Фильмы: {{ genre }}</h3>
-      <div class="muted">Годы: {{ y_from }}—{{ y_to }} • найдено: {{ total }}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <h3 class="panel-title">Фильмы: {{ genre if genre else 'Все' }}</h3>
+        <div class="muted">Годы: {{ y_from }}—{{ y_to }} • найдено: {{ total }}</div>
+      </div>
+
+      <!-- Быстрая форма изменения диапазона прямо на странице результатов -->
+      <form action="{{ url_for('search_genre') }}" method="get" style="display:flex; gap:.5rem; align-items:center;">
+        {% if genre %}
+          <input type="hidden" name="genre" value="{{ genre }}">
+        {% endif %}
+        <input type="number" name="y_from" min="{{ min_year }}" max="{{ max_year }}" value="{{ y_from }}" style="width:90px;">
+        <span>—</span>
+        <input type="number" name="y_to" min="{{ min_year }}" max="{{ max_year }}" value="{{ y_to }}" style="width:90px;">
+        <button class="btn" type="submit">Фильтровать</button>
+      </form>
     </div>
   </div>
 
   {% if results %}
     <div class="movies-grid">
-      {% for r in results %}
+      {# Сортируем результаты по release_year (по возрастанию). Если нужно — добавьте reverse=True для убывания. #}
+      {% for r in results|sort(attribute='release_year') %}
         <article class="movie-card">
           <a class="poster" href="#" aria-label="{{ r.title }}" data-letter="{{ r.title.strip()[:1] | upper }}">
             {% if r.poster_url %}

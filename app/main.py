@@ -2,7 +2,7 @@ import sys
 from typing import Optional
 
 import local_settings as settings
-import mysql_connector as db
+from app import mysql_connector as db
 import log_writer
 import log_stats
 import formatter

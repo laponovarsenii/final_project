@@ -1,4 +1,3 @@
 local_settings.py
-mysql_connector.py
 .idea/
 __pycache__/

@@ -22,7 +22,8 @@
 
   {% if results %}
     <div class="movies-grid">
-      {% for r in results %}
+      {# Сортировка по году выхода (по возрастанию). Для обратного порядка: |sort(attribute='release_year', reverse=True) #}
+      {% for r in results|sort(attribute='release_year') %}
         <article class="movie-card">
           <a class="poster" href="#" aria-label="{{ r.title }}" data-letter="{{ r.title.strip()[:1] | upper }}">
             {% if r.poster_url %}
