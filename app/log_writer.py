@@ -37,5 +37,4 @@ def log_query(search_type: str, params: Dict[str, Any], results_count: int) -> N
         coll = get_collection()
         coll.insert_one(doc)
     except PyMongoError as e:
-        # Не падаем из‑за логирования — только предупреждение
         print(f"[LOGGING WARNING] MongoDB insert failed: {e}")

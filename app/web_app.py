@@ -4,7 +4,7 @@ from pathlib import Path
 from flask import Flask, render_template, request, redirect, url_for, flash
 
 import local_settings as settings
-from app import mysql_connector as db
+import mysql_connector as db
 import log_writer
 import log_stats
 
@@ -20,6 +20,7 @@ app = Flask(
     template_folder=str(TEMPLATES_DIR),
     static_folder=str(STATIC_DIR),
 )
+
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev")
 
 

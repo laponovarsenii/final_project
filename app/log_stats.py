@@ -35,7 +35,7 @@ def get_top_popular(limit: int = 5) -> List[Dict[str, Any]]:
 
 def get_latest_unique(limit: int = 5) -> List[Dict[str, Any]]:
     """
-    Возвращает N самых последних уникальных поисковых запросов (по search_type+params),
+    Возвращает N самых последних уникальных поисковых запросов (по search_type, params),
     отсортированных по убыванию времени запроса.
 
     :param limit: Максимальное число уникальных последних запросов.
